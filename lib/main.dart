@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'idle_screen_page.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -13,7 +14,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Kiosk App',
-      home: const IdleScreenPage(),
+      theme: ThemeData(
+        fontFamily: 'Montserrat',
+      ),
+      home: const IdleScreenPage(), // Start the app here
     );
   }
 }

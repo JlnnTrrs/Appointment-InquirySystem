@@ -12,7 +12,8 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.8
   http: ^0.13.6
-  js: ^0.6.7 # Still discontinued, but keeping it as you use it
+  lottie: ^2.6.0
+  flutter_tts: ^3.8.4
 
 dev_dependencies:
   flutter_test:
@@ -23,3 +24,16 @@ flutter:
   uses-material-design: true
   assets:
     - assets/ads/
+    - assets/logos/
+    - assets/icons/
+  fonts:
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/montserrat-font/MontserratRegular.ttf
+        - asset: assets/fonts/montserrat-font/MontserratBold.ttf
+          weight: 700
+    - family: OpenSans
+      fonts:
+        - asset: assets/fonts/open-sans-font/OpenSans.ttf
+          weight: 600
+

@@ -1,7 +1,18 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'inquiry_type_page.dart';
 import 'employee_list_page.dart';
-import 'speaker.dart'; // 👈 For TTS
+import 'speaker.dart';
+import 'custom_header.dart';
+import 'idle_screen_page.dart';
+
+class OptionItem {
+  final String label;
+  final String type;
+  final IconData icon;
+
+  OptionItem({required this.label, required this.type, required this.icon});
+}
 
 class TransactionTypePage extends StatefulWidget {
   const TransactionTypePage({super.key});
@@ -11,104 +22,151 @@ class TransactionTypePage extends StatefulWidget {
 }
 
 class _TransactionTypePageState extends State<TransactionTypePage> {
+  Timer? _inactivityTimer;
+
   @override
   void initState() {
     super.initState();
-    // 👇 Speak welcome message when the page loads
     speakText("Welcome, please choose the transaction you want.");
+    _startInactivityTimer();
   }
 
-  void handleTransactionType(BuildContext context, String type) {
-    speakText('You selected $type');
+  @override
+  void dispose() {
+    _inactivityTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startInactivityTimer() {
+    _inactivityTimer?.cancel();
+    _inactivityTimer = Timer(const Duration(seconds: 30), () {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const IdleScreenPage()),
+      );
+    });
+  }
+
+  void _resetInactivityTimer() {
+    _startInactivityTimer();
+  }
+
+  void handleTransactionType(BuildContext context, String type) async {
+    _inactivityTimer?.cancel();
+    await speakText('You selected $type');
+    await Future.delayed(const Duration(milliseconds: 1300));
 
     if (type == 'Inquiry') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const InquiryTypePage()),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const InquiryTypePage()));
     } else if (type == 'Appointment') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const EmployeeListPage()),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const EmployeeListPage()));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final isWide = screenSize.width > 700;
-
-    final List<Map<String, dynamic>> options = [
-      {'label': 'Inquiry', 'type': 'Inquiry', 'icon': Icons.help_outline},
-      {'label': 'Appointment', 'type': 'Appointment', 'icon': Icons.calendar_today},
+    final options = [
+      OptionItem(label: 'Inquiry', type: 'Inquiry', icon: Icons.help_outline),
+      OptionItem(label: 'Appointment', type: 'Appointment', icon: Icons.calendar_today),
     ];
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFDE1923),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFDE1923),
-        elevation: 0,
-        toolbarHeight: 60,
-        title: const Text(
-          'Choose Transaction Type',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900),
-            child: Column(
-              children: [
-                const Text(
-                  'What do you need?',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 40),
-                Wrap(
-                  spacing: 40,
-                  runSpacing: 30,
-                  alignment: WrapAlignment.center,
-                  children: options.map((option) {
-                    return GestureDetector(
-                      onTap: () => handleTransactionType(context, option['type']),
-                      child: Container(
-                        width: isWide ? 320 : 280,
-                        height: isWide ? 160 : 140,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 16,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
+    final size = MediaQuery.of(context).size;
+    final double width = size.width;
+    final double height = size.height;
+    final double scale = ((width + height) / 2) / 800;
+    final crossAxisCount = width < 600 ? 1 : 2;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: _resetInactivityTimer,
+      onPanDown: (_) => _resetInactivityTimer(),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFBE0002),
+        body: SafeArea(
+          child: Column(
+            children: [
+              const CustomHeader(),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      physics: constraints.maxHeight < 500
+                          ? const BouncingScrollPhysics()
+                          : const NeverScrollableScrollPhysics(),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: constraints.maxHeight),
                         child: Center(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(option['icon'], size: isWide ? 36 : 32, color: Colors.black),
-                              const SizedBox(width: 16),
-                              Text(
-                                option['label'],
-                                style: TextStyle(
-                                  fontSize: isWide ? 26 : 22,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 18 * scale),
+                                child: Text(
+                                  'WHAT WOULD YOU LIKE TO DO?',
+                                  style: TextStyle(
+                                    fontSize: (30 * scale).clamp(20, 36),
+                                    fontWeight: FontWeight.w900,
+                                    fontFamily: 'Montserrat',
+                                    color: Colors.white,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                              SizedBox(height: 25 * scale),
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 800),
+                                child: GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: options.length,
+                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: crossAxisCount,
+                                    crossAxisSpacing: 30 * scale,
+                                    mainAxisSpacing: 30 * scale,
+                                    mainAxisExtent: (height * 0.33).clamp(120, 200),
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    final option = options[index];
+                                    return GestureDetector(
+                                      onTap: () => handleTransactionType(context, option.type),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(20 * scale),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.55),
+                                              blurRadius: 12 * scale,
+                                              offset: Offset(0, 3 * scale),
+                                            ),
+                                          ],
+                                        ),
+                                        padding: EdgeInsets.symmetric(horizontal: 16 * scale),
+                                        child: Center(
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                option.icon,
+                                                size: (35 * scale).clamp(20, 40),
+                                                color: Colors.black,
+                                              ),
+                                              SizedBox(width: 16 * scale),
+                                              Text(
+                                                option.label,
+                                                style: TextStyle(
+                                                  fontFamily: 'OpenSans',
+                                                  fontSize: (25 * scale).clamp(14, 24),
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.black,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ),
                             ],
@@ -116,10 +174,25 @@ class _TransactionTypePageState extends State<TransactionTypePage> {
                         ),
                       ),
                     );
-                  }).toList(),
+                  },
                 ),
-              ],
-            ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 15),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '© 2025 University of Mindanao. All Rights Reserved.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: (12 * scale).clamp(10, 14),
+                      fontFamily: 'Montserrat',
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
