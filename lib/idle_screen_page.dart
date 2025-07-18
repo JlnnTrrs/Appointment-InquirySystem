@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'transaction_type_page.dart';
 
@@ -21,17 +22,33 @@ class _IdleScreenPageState extends State<IdleScreenPage> {
 
   late PageController _pageController;
   int _currentIndex = 0;
+  Timer? _autoSwipeTimer;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
+    _startAutoSwipe();
   }
 
   @override
   void dispose() {
+    _autoSwipeTimer?.cancel();
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _startAutoSwipe() {
+    _autoSwipeTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (_pageController.hasClients) {
+        final nextIndex = (_currentIndex + 1) % _ads.length;
+        _pageController.animateToPage(
+          nextIndex,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
   }
 
   void _goToTransactionTypePage() {
@@ -55,7 +72,7 @@ class _IdleScreenPageState extends State<IdleScreenPage> {
   }
 
   String _getAdLabel(String adPath) {
-    String fileName = adPath.split('/').last;
+    final fileName = adPath.split('/').last;
     return fileName.replaceAll(RegExp(r'\.(jpg|png)$'), '');
   }
 
@@ -68,7 +85,7 @@ class _IdleScreenPageState extends State<IdleScreenPage> {
       behavior: HitTestBehavior.opaque,
       onTap: _goToTransactionTypePage,
       onPanUpdate: (details) {
-        if (details.localPosition.dx > 0) {
+        if (details.delta.dx > 0) {
           _goToPage(_currentIndex - 1);
         } else {
           _goToPage(_currentIndex + 1);
@@ -90,38 +107,11 @@ class _IdleScreenPageState extends State<IdleScreenPage> {
                       setState(() => _currentIndex = index);
                     },
                     itemBuilder: (context, index) {
-                      return Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.asset(
-                            _ads[index],
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                          ),
-                          Positioned(
-                            bottom: 16,
-                            left: 30,
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 10 * scale,
-                                vertical: 6 * scale,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.8),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                _getAdLabel(_ads[index]),
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 25 * scale,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                      return Image.asset(
+                        _ads[index],
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: double.infinity,
                       );
                     },
                   ),
@@ -132,7 +122,9 @@ class _IdleScreenPageState extends State<IdleScreenPage> {
                     child: IconButton(
                       icon: Icon(Icons.arrow_back_ios,
                           color: Colors.white, size: 30 * scale),
-                      onPressed: () => _goToPage(_currentIndex - 1),
+                      onPressed: () {
+                        _goToPage(_currentIndex - 1);
+                      },
                     ),
                   ),
                   Positioned(
@@ -142,7 +134,30 @@ class _IdleScreenPageState extends State<IdleScreenPage> {
                     child: IconButton(
                       icon: Icon(Icons.arrow_forward_ios,
                           color: Colors.white, size: 30 * scale),
-                      onPressed: () => _goToPage(_currentIndex + 1),
+                      onPressed: () {
+                        _goToPage(_currentIndex + 1);
+                      },
+                    ),
+                  ),
+                  // Label banner aligned with arrows
+                  Positioned(
+                    top: MediaQuery.of(context).size.height * 0.36, // Around vertical center of the ad
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      color: Colors.black.withOpacity(0.6),
+                      padding: EdgeInsets.symmetric(vertical: 12 * scale),
+                      child: Center(
+                        child: Text(
+                          _getAdLabel(_ads[_currentIndex]),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 30 * scale,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ),
                   ),
                   Positioned(
@@ -176,10 +191,10 @@ class _IdleScreenPageState extends State<IdleScreenPage> {
                 padding: EdgeInsets.symmetric(vertical: 16 * scale),
                 color: const Color(0xFFBE0002),
                 child: Text(
-                  'CLICK ANYWHERE TO START',
+                  'TAP ANYWHERE TO TRANSACT',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 15 * scale,
+                    fontSize: 35 * scale,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
                   ),
